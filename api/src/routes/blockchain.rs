@@ -1,7 +1,7 @@
 use crate::models::blockchain::{
     AccountMetaResponse, ApiFailResponse, ApiResponse, ApiSuccessResponse, CreateTokenRequest,
     InstructionResponse, InstructionResponseArrayAccounts, InstructionResponseObjAccount,
-    InstructionSimpleResponse, KeypairResponse, MintTokenRequest, SendSolRequest,
+    InstructionSimpleResponse, KeypairResponse, MintTokenRequest, SendSolRequest, SendTokenRequest,
     SignMessageRequest, SignMessageResponse, VerifyMessageRequest, VerifyMessageResponse,
 };
 use poem::{
@@ -19,8 +19,8 @@ use solana_sdk::{
     signature::{Keypair, Signature},
     signer::Signer,
 };
-use spl_token::instruction::initialize_mint;
 use spl_token::instruction::{self, mint_to};
+use spl_token::instruction::{initialize_mint, transfer};
 use std::str::FromStr;
 //
 
@@ -302,6 +302,79 @@ pub async fn send_sol(
     PoemJson(ApiResponse {
         success: true,
         data: Some(response),
+        error: None,
+    })
+}
+
+// Send token
+
+#[handler]
+pub async fn send_token(
+    PoemJson(req): PoemJson<SendTokenRequest>,
+) -> PoemJson<ApiResponse<InstructionResponseArrayAccounts>> {
+    let destination = match req.destination.parse::<Pubkey>() {
+        Ok(p) => p,
+        Err(_) => {
+            return PoemJson(ApiResponse {
+                success: false,
+                data: None,
+                error: Some("Invalid destination address".into()),
+            });
+        }
+    };
+
+    let mint = match req.mint.parse::<Pubkey>() {
+        Ok(p) => p,
+        Err(_) => {
+            return PoemJson(ApiResponse {
+                success: false,
+                data: None,
+                error: Some("Invalid mint address".into()),
+            });
+        }
+    };
+
+    let owner = match req.owner.parse::<Pubkey>() {
+        Ok(p) => p,
+        Err(_) => {
+            return PoemJson(ApiResponse {
+                success: false,
+                data: None,
+                error: Some("Invalid owner address".into()),
+            });
+        }
+    };
+
+    let ix = transfer(
+        &spl_token::id(),
+        &owner,       // source account (token account owned by sender)
+        &destination, // destination token account
+        &owner,       // authority
+        &[],          // signer seeds
+        req.amount,
+    )
+    .map_err(InternalServerError)
+    .unwrap();
+
+    let accounts: Vec<AccountMetaResponse> = ix
+        .accounts
+        .iter()
+        .map(|acc| AccountMetaResponse {
+            pubkey: acc.pubkey.to_string(),
+            is_signer: acc.is_signer,
+            is_writable: acc.is_writable,
+        })
+        .collect();
+
+    let data = base64::encode(ix.data);
+
+    PoemJson(ApiResponse {
+        success: true,
+        data: Some(InstructionResponseArrayAccounts {
+            program_id: ix.program_id.to_string(),
+            accounts,
+            instruction_data: data,
+        }),
         error: None,
     })
 }

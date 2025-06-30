@@ -114,3 +114,11 @@ pub struct InstructionSimpleResponse {
     pub accounts: Vec<String>,
     pub instruction_data: String,
 }
+
+#[derive(Serialize, Deserialize)]
+pub struct SendTokenRequest {
+    pub destination: String,
+    pub mint: String,
+    pub owner: String,
+    pub amount: u64,
+}

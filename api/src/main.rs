@@ -19,7 +19,8 @@ async fn main() -> Result<(), std::io::Error> {
         .at("/token/mint", poem::post(mint_token))
         .at("/message/sign", poem::post(sign_message))
         .at("/message/verify", poem::post(verify_message))
-        .at("/send/sol", poem::post(routes::blockchain::send_sol));
+        .at("/send/sol", poem::post(routes::blockchain::send_sol))
+        .at("/token/send", poem::post(routes::blockchain::send_token));
 
     println!("Server running at http://localhost:3000");
     Server::new(TcpListener::bind("0.0.0.0:3000"))
