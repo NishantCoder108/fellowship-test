@@ -1,17 +1,22 @@
-pub mod models;
-pub mod routes;
+# Fellowship Test
 
-use poem::{
-    EndpointExt, Route, Server, get, handler,
-    listener::TcpListener,
-    middleware::Tracing,
-    web::{Json, Path},
-};
-use routes::blockchain::generate_keypair;
+Write http server to interact with solana program
 
-use crate::routes::blockchain::{create_token, mint_token, sign_message, verify_message};
+## Setup
 
-#[tokio::main]
+```bash
+cargo install 
+```
+
+## Run
+
+```bash
+cargo run    
+```
+
+
+## Routes
+```rust
 async fn main() -> Result<(), std::io::Error> {
     let app = Route::new()
         .at("/keypair", poem::post(generate_keypair))
@@ -27,3 +32,4 @@ async fn main() -> Result<(), std::io::Error> {
         .run(app)
         .await
 }
+```
