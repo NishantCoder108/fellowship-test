@@ -1,6 +1,7 @@
 use crate::models::blockchain::{
     AccountMetaResponse, ApiResponse, ApiSuccessResponse, CreateTokenRequest, InstructionResponse,
-    InstructionResponseObjAccount, KeypairResponse,
+    InstructionResponseArrayAccounts, InstructionResponseObjAccount, KeypairResponse,
+    MintTokenRequest,
 };
 use poem::{
     Result,
@@ -14,8 +15,8 @@ use solana_client::{
     rpc_response::RpcConfirmedTransactionStatusWithSignature,
 };
 use solana_sdk::{signature::Keypair, signer::Signer};
-use spl_token::instruction;
 use spl_token::instruction::initialize_mint;
+use spl_token::instruction::{self, mint_to};
 use std::str::FromStr;
 //
 
@@ -49,49 +50,7 @@ pub async fn generate_keypair() -> PoemJson<ApiSuccessResponse<KeypairResponse>>
     })
 }
 
-// //Create token
-// #[handler]
-// async fn create_token(
-//     PoemJson(req): PoemJson<CreateTokenRequest>,
-// ) -> PoemJson<ApiResponse<InstructionResponse>> {
-//     let mint = req.mint.parse().unwrap_or_else(|_| Pubkey::new_unique());
-//     let authority = req
-//         .mint_authority
-//         .parse()
-//         .unwrap_or_else(|_| Pubkey::new_unique());
-
-//     let ix = instruction::TokenInstruction::InitializeMint(
-//         &spl_token::id(),
-//         &mint,
-//         &authority,
-//         None,
-//         req.decimals,
-//     )
-//     .map_err(|e| InternalServerError(e.to_string()))
-//     .unwrap();
-
-//     let accounts: Vec<AccountMetaResponse> = ix
-//         .accounts
-//         .iter()
-//         .map(|acc| AccountMetaResponse {
-//             pubkey: acc.pubkey.to_string(),
-//             is_signer: acc.is_signer,
-//             is_writable: acc.is_writable,
-//         })
-//         .collect();
-
-//     let data = base64::encode(ix.data);
-
-//     PoemJson(ApiResponse {
-//         success: true,
-//         data: Some(InstructionResponse {
-//             program_id: ix.program_id.to_string(),
-//             accounts,
-//             instruction_data: data,
-//         }),
-//         error: None,
-//     })
-// }
+//Create Token
 
 #[handler]
 pub async fn create_token(
@@ -124,6 +83,55 @@ pub async fn create_token(
     PoemJson(ApiSuccessResponse {
         success: true,
         data: Some(InstructionResponseObjAccount {
+            program_id: ix.program_id.to_string(),
+            accounts,
+            instruction_data: data,
+        }),
+    })
+}
+
+// Mint Token
+
+#[handler]
+pub async fn mint_token(
+    PoemJson(req): PoemJson<MintTokenRequest>,
+) -> PoemJson<ApiSuccessResponse<InstructionResponseArrayAccounts>> {
+    let mint = req.mint.parse().unwrap_or_else(|_| Pubkey::new_unique());
+    let destination = req
+        .destination
+        .parse()
+        .unwrap_or_else(|_| Pubkey::new_unique());
+    let authority = req
+        .authority
+        .parse()
+        .unwrap_or_else(|_| Pubkey::new_unique());
+
+    let ix = mint_to(
+        &spl_token::id(),
+        &mint,
+        &destination,
+        &authority,
+        &[],
+        req.amount,
+    )
+    .map_err(InternalServerError)
+    .unwrap();
+
+    let accounts: Vec<AccountMetaResponse> = ix
+        .accounts
+        .iter()
+        .map(|acc| AccountMetaResponse {
+            pubkey: acc.pubkey.to_string(),
+            is_signer: acc.is_signer,
+            is_writable: acc.is_writable,
+        })
+        .collect();
+
+    let data = base64::encode(ix.data);
+
+    PoemJson(ApiSuccessResponse {
+        success: true,
+        data: Some(InstructionResponseArrayAccounts {
             program_id: ix.program_id.to_string(),
             accounts,
             instruction_data: data,

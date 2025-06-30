@@ -47,3 +47,19 @@ pub struct InstructionResponseObjAccount {
     pub accounts: std::collections::HashMap<String, AccountMetaResponse>,
     pub instruction_data: String,
 }
+
+// Mint Token
+#[derive(Serialize, Deserialize)]
+pub struct MintTokenRequest {
+    pub mint: String,
+    pub destination: String,
+    pub authority: String,
+    pub amount: u64,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct InstructionResponseArrayAccounts {
+    pub program_id: String,
+    pub accounts: Vec<AccountMetaResponse>,
+    pub instruction_data: String,
+}
