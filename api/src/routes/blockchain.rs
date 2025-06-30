@@ -1,7 +1,7 @@
 use crate::models::blockchain::{
-    AccountMetaResponse, ApiResponse, ApiSuccessResponse, CreateTokenRequest, InstructionResponse,
-    InstructionResponseArrayAccounts, InstructionResponseObjAccount, KeypairResponse,
-    MintTokenRequest, SignMessageRequest, SignMessageResponse,
+    AccountMetaResponse, ApiFailResponse, ApiResponse, ApiSuccessResponse, CreateTokenRequest,
+    InstructionResponse, InstructionResponseArrayAccounts, InstructionResponseObjAccount,
+    KeypairResponse, MintTokenRequest, SignMessageRequest, SignMessageResponse,
 };
 use poem::{
     Result,
@@ -144,7 +144,7 @@ pub async fn mint_token(
 #[handler]
 pub async fn sign_message(
     PoemJson(req): PoemJson<SignMessageRequest>,
-) -> PoemJson<ApiResponse<SignMessageResponse>> {
+) -> Result<PoemJson<ApiResponse<SignMessageResponse>>, PoemJson<ApiFailResponse>> {
     if req.message.is_empty() || req.secret.is_empty() {
         return PoemJson(ApiResponse {
             success: false,
@@ -167,9 +167,9 @@ pub async fn sign_message(
     let keypair = match Keypair::from_bytes(&secret_bytes) {
         Ok(kp) => kp,
         Err(_) => {
-            return PoemJson(ApiResponse {
+            return PoemJson(ApiFailResponse {
                 success: false,
-                data: None,
+
                 error: Some("Invalid secret key bytes".to_string()),
             });
         }

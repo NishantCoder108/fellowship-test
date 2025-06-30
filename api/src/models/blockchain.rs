@@ -12,6 +12,12 @@ pub struct ApiSuccessResponse<T> {
     pub success: bool,
     pub data: Option<T>,
 }
+
+#[derive(Serialize, Deserialize)]
+pub struct ApiFailResponse<T> {
+    pub success: bool,
+    pub error: Option<T>,
+}
 #[derive(Serialize, Deserialize)]
 pub struct KeypairResponse {
     pub pubkey: String,

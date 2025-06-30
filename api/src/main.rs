@@ -6,7 +6,7 @@ use poem::{
 };
 use routes::blockchain::generate_keypair;
 
-use crate::routes::blockchain::{create_token, mint_token};
+use crate::routes::blockchain::{create_token, mint_token, sign_message};
 
 #[tokio::main]
 async fn main() -> Result<(), std::io::Error> {
