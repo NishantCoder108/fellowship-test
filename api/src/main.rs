@@ -6,9 +6,13 @@ use poem::{
 };
 use routes::blockchain::generate_keypair;
 
+use crate::routes::blockchain::create_token;
+
 #[tokio::main]
 async fn main() -> Result<(), std::io::Error> {
-    let app = Route::new().at("/keypair", poem::post(generate_keypair));
+    let app = Route::new()
+        .at("/keypair", poem::post(generate_keypair))
+        .at("/token/create", poem::post(create_token));
 
     println!("Server running at http://localhost:3000");
     Server::new(TcpListener::bind("0.0.0.0:3000"))

@@ -21,6 +21,7 @@ pub struct KeypairResponse {
 // For token Creation
 #[derive(Serialize, Deserialize)]
 pub struct CreateTokenRequest {
+    #[serde(rename = "mintAuthority")]
     pub mint_authority: String,
     pub mint: String,
     pub decimals: u8,
@@ -38,4 +39,11 @@ pub struct AccountMetaResponse {
     pub pubkey: String,
     pub is_signer: bool,
     pub is_writable: bool,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct InstructionResponseObjAccount {
+    pub program_id: String,
+    pub accounts: std::collections::HashMap<String, AccountMetaResponse>,
+    pub instruction_data: String,
 }
