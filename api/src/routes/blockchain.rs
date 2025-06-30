@@ -144,7 +144,7 @@ pub async fn mint_token(
 #[handler]
 pub async fn sign_message(
     PoemJson(req): PoemJson<SignMessageRequest>,
-) -> Result<PoemJson<ApiResponse<SignMessageResponse>>, PoemJson<ApiFailResponse>> {
+) -> PoemJson<ApiResponse<SignMessageResponse>> {
     if req.message.is_empty() || req.secret.is_empty() {
         return PoemJson(ApiResponse {
             success: false,
@@ -167,9 +167,9 @@ pub async fn sign_message(
     let keypair = match Keypair::from_bytes(&secret_bytes) {
         Ok(kp) => kp,
         Err(_) => {
-            return PoemJson(ApiFailResponse {
+            return PoemJson(ApiResponse {
                 success: false,
-
+                data: None,
                 error: Some("Invalid secret key bytes".to_string()),
             });
         }
