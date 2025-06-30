@@ -84,3 +84,19 @@ pub struct SignMessageResponse {
     pub public_key: String,
     pub message: String,
 }
+
+// Verfiy message
+
+#[derive(Serialize, Deserialize)]
+pub struct VerifyMessageRequest {
+    pub message: String,
+    pub signature: String,
+    pub pubkey: String,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct VerifyMessageResponse {
+    pub valid: bool,
+    pub message: String,
+    pub pubkey: String,
+}

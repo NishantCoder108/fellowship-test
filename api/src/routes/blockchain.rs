@@ -2,6 +2,7 @@ use crate::models::blockchain::{
     AccountMetaResponse, ApiFailResponse, ApiResponse, ApiSuccessResponse, CreateTokenRequest,
     InstructionResponse, InstructionResponseArrayAccounts, InstructionResponseObjAccount,
     KeypairResponse, MintTokenRequest, SignMessageRequest, SignMessageResponse,
+    VerifyMessageRequest, VerifyMessageResponse,
 };
 use poem::{
     Result,
@@ -183,6 +184,67 @@ pub async fn sign_message(
             signature: base64::encode(signature.as_ref()),
             public_key: keypair.pubkey().to_string(),
             message: req.message,
+        }),
+        error: None,
+    })
+}
+
+// Verfify message
+
+#[handler]
+pub async fn verify_message(
+    PoemJson(req): PoemJson<VerifyMessageRequest>,
+) -> PoemJson<ApiResponse<VerifyMessageResponse>> {
+    let pubkey = match bs58::decode(&req.pubkey).into_vec() {
+        Ok(bytes) => match Pubkey::try_from(bytes.as_slice()) {
+            Ok(pk) => pk,
+            Err(_) => {
+                return PoemJson(ApiResponse {
+                    success: false,
+                    data: None,
+                    error: Some("Invalid public key format".to_string()),
+                });
+            }
+        },
+        Err(_) => {
+            return PoemJson(ApiResponse {
+                success: false,
+                data: None,
+                error: Some("Invalid public key base58".to_string()),
+            });
+        }
+    };
+
+    let signature_bytes = match base64::decode(&req.signature) {
+        Ok(bytes) => bytes,
+        Err(_) => {
+            return PoemJson(ApiResponse {
+                success: false,
+                data: None,
+                error: Some("Invalid signature base64".to_string()),
+            });
+        }
+    };
+
+    let sig = match Signature::try_from(signature_bytes.as_slice()) {
+        Ok(s) => s,
+        Err(_) => {
+            return PoemJson(ApiResponse {
+                success: false,
+                data: None,
+                error: Some("Invalid signature format".to_string()),
+            });
+        }
+    };
+
+    let valid = sig.verify(pubkey.as_ref(), req.message.as_bytes()).is_ok();
+
+    PoemJson(ApiResponse {
+        success: true,
+        data: Some(VerifyMessageResponse {
+            valid,
+            message: req.message,
+            pubkey: req.pubkey,
         }),
         error: None,
     })

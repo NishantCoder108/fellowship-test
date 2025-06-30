@@ -6,7 +6,7 @@ use poem::{
 };
 use routes::blockchain::generate_keypair;
 
-use crate::routes::blockchain::{create_token, mint_token, sign_message};
+use crate::routes::blockchain::{create_token, mint_token, sign_message, verify_message};
 
 #[tokio::main]
 async fn main() -> Result<(), std::io::Error> {
@@ -14,7 +14,8 @@ async fn main() -> Result<(), std::io::Error> {
         .at("/keypair", poem::post(generate_keypair))
         .at("/token/create", poem::post(create_token))
         .at("/token/mint", poem::post(mint_token))
-        .at("/message/sign", poem::post(sign_message));
+        .at("/message/sign", poem::post(sign_message))
+        .at("/message/verify", poem::post(verify_message));
 
     println!("Server running at http://localhost:3000");
     Server::new(TcpListener::bind("0.0.0.0:3000"))
