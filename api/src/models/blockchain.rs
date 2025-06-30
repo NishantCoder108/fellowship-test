@@ -100,3 +100,17 @@ pub struct VerifyMessageResponse {
     pub message: String,
     pub pubkey: String,
 }
+
+#[derive(Serialize, Deserialize)]
+pub struct SendSolRequest {
+    pub from: String,
+    pub to: String,
+    pub lamports: u64,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct InstructionSimpleResponse {
+    pub program_id: String,
+    pub accounts: Vec<String>,
+    pub instruction_data: String,
+}

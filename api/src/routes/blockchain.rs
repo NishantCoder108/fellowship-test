@@ -1,8 +1,8 @@
 use crate::models::blockchain::{
     AccountMetaResponse, ApiFailResponse, ApiResponse, ApiSuccessResponse, CreateTokenRequest,
     InstructionResponse, InstructionResponseArrayAccounts, InstructionResponseObjAccount,
-    KeypairResponse, MintTokenRequest, SignMessageRequest, SignMessageResponse,
-    VerifyMessageRequest, VerifyMessageResponse,
+    InstructionSimpleResponse, KeypairResponse, MintTokenRequest, SendSolRequest,
+    SignMessageRequest, SignMessageResponse, VerifyMessageRequest, VerifyMessageResponse,
 };
 use poem::{
     Result,
@@ -15,7 +15,10 @@ use solana_client::{
     nonblocking::rpc_client::RpcClient, rpc_client::GetConfirmedSignaturesForAddress2Config,
     rpc_response::RpcConfirmedTransactionStatusWithSignature,
 };
-use solana_sdk::{signature::Keypair, signer::Signer};
+use solana_sdk::{
+    signature::{Keypair, Signature},
+    signer::Signer,
+};
 use spl_token::instruction::initialize_mint;
 use spl_token::instruction::{self, mint_to};
 use std::str::FromStr;
@@ -29,7 +32,10 @@ use bs58;
 // use poem::web::Json as PoemJson;
 use poem::{Route, Server, listener::TcpListener};
 use serde::{Deserialize, Serialize};
-use solana_program::{instruction::Instruction as ProgramInstruction, pubkey::Pubkey};
+use solana_program::{
+    example_mocks::solana_sdk::system_instruction, instruction::Instruction as ProgramInstruction,
+    pubkey::Pubkey,
+};
 use solana_sdk::instruction::{AccountMeta, Instruction};
 use solana_sdk::pubkey;
 // use spl_token::instruction::initialize_mint;
@@ -237,8 +243,7 @@ pub async fn verify_message(
         }
     };
 
-    let valid = sig.verify(pubkey.as_ref(), req.message.as_bytes()).is_ok();
-
+    let valid = sig.verify(pubkey.as_ref(), req.message.as_bytes());
     PoemJson(ApiResponse {
         success: true,
         data: Some(VerifyMessageResponse {
@@ -246,6 +251,57 @@ pub async fn verify_message(
             message: req.message,
             pubkey: req.pubkey,
         }),
+        error: None,
+    })
+}
+
+// Send Sol
+// The actual handler function
+#[handler]
+pub async fn send_sol(
+    PoemJson(req): PoemJson<SendSolRequest>,
+) -> PoemJson<ApiResponse<InstructionSimpleResponse>> {
+    // Validate sender pubkey
+    let from = match req.from.parse::<Pubkey>() {
+        Ok(pubkey) => pubkey,
+        Err(_) => {
+            return PoemJson(ApiResponse {
+                success: false,
+                data: None,
+                error: Some("Invalid sender address".into()),
+            });
+        }
+    };
+
+    // Validate receiver pubkey
+    let to = match req.to.parse::<Pubkey>() {
+        Ok(pubkey) => pubkey,
+        Err(_) => {
+            return PoemJson(ApiResponse {
+                success: false,
+                data: None,
+                error: Some("Invalid recipient address".into()),
+            });
+        }
+    };
+
+    // Create system transfer instruction
+    let instruction = system_instruction::transfer(&from, &to, req.lamports);
+
+    // Prepare response
+    let response = InstructionSimpleResponse {
+        program_id: instruction.program_id.to_string(),
+        accounts: instruction
+            .accounts
+            .iter()
+            .map(|acc| acc.pubkey.to_string())
+            .collect(),
+        instruction_data: base64::encode(instruction.data),
+    };
+
+    PoemJson(ApiResponse {
+        success: true,
+        data: Some(response),
         error: None,
     })
 }
