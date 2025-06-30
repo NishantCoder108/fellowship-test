@@ -63,3 +63,18 @@ pub struct InstructionResponseArrayAccounts {
     pub accounts: Vec<AccountMetaResponse>,
     pub instruction_data: String,
 }
+
+// Sign Message
+
+#[derive(Serialize, Deserialize)]
+pub struct SignMessageRequest {
+    pub message: String,
+    pub secret: String,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct SignMessageResponse {
+    pub signature: String,
+    pub public_key: String,
+    pub message: String,
+}

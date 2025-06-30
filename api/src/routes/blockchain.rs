@@ -1,7 +1,7 @@
 use crate::models::blockchain::{
     AccountMetaResponse, ApiResponse, ApiSuccessResponse, CreateTokenRequest, InstructionResponse,
     InstructionResponseArrayAccounts, InstructionResponseObjAccount, KeypairResponse,
-    MintTokenRequest,
+    MintTokenRequest, SignMessageRequest, SignMessageResponse,
 };
 use poem::{
     Result,
@@ -136,5 +136,54 @@ pub async fn mint_token(
             accounts,
             instruction_data: data,
         }),
+    })
+}
+
+// Sign Message
+
+#[handler]
+pub async fn sign_message(
+    PoemJson(req): PoemJson<SignMessageRequest>,
+) -> PoemJson<ApiResponse<SignMessageResponse>> {
+    if req.message.is_empty() || req.secret.is_empty() {
+        return PoemJson(ApiResponse {
+            success: false,
+            data: None,
+            error: Some("Missing required fields".to_string()),
+        });
+    }
+
+    let secret_bytes = match bs58::decode(&req.secret).into_vec() {
+        Ok(bytes) => bytes,
+        Err(_) => {
+            return PoemJson(ApiResponse {
+                success: false,
+                data: None,
+                error: Some("Invalid secret key format".to_string()),
+            });
+        }
+    };
+
+    let keypair = match Keypair::from_bytes(&secret_bytes) {
+        Ok(kp) => kp,
+        Err(_) => {
+            return PoemJson(ApiResponse {
+                success: false,
+                data: None,
+                error: Some("Invalid secret key bytes".to_string()),
+            });
+        }
+    };
+
+    let signature = keypair.sign_message(req.message.as_bytes());
+
+    PoemJson(ApiResponse {
+        success: true,
+        data: Some(SignMessageResponse {
+            signature: base64::encode(signature.as_ref()),
+            public_key: keypair.pubkey().to_string(),
+            message: req.message,
+        }),
+        error: None,
     })
 }
